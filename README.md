@@ -1,4 +1,5 @@
-junk and other stuff from stuffs i run
-mostly configuration files scattered here n there 'cus at some point you start getting bored of endlessly losing stuff or rming the wrong thing
+config, junk and random stuff that I love losing by either a mistake or deciding I don't need it only to need it later.
 
-if you want quality experience, my blog which is https://rubberverse.xyz has some posts up that I write out about stuff i've been doing, this repository is more of a dirty notepad.
+Most of stuff here is just used to run some Discord bots and actual sites (ex. https://rubberverse.xyz) so might not be very universal or useful but here so I don't lose it.
+
+ burher
