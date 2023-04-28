@@ -1,0 +1,12 @@
+Decription=Start FRP server
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/ducky/frp/start.sh
+TimeoutStartSec=5
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=default.target
