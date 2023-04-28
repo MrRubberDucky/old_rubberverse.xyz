@@ -1,0 +1,16 @@
+{
+    "inputAssist": "autoplay",
+    "inputAssistSpeed": "normal",
+    "directionPress": "release",
+    "game": "PokemonFireRed.gba",
+    "coreType": "gba",
+    "guild": "767861150708137994",
+    "channelId": "1082640866503565332",
+    "multipliers": [
+        2,
+        3,
+        4,
+        5,
+        10
+    ]
+}
