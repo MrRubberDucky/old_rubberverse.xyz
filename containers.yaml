@@ -58,7 +58,7 @@ services:
       - WHOOGLE_AUTOCOMPLETE=1
       - EXPOSE_PORT=4242
       - WHOOGLE_CONFIG_URL=https://search.rubberverse.xyz/
-	    - WHOOGLE_CONFIG_PREFERENCES_ENCRYPTED=1
+      - WHOOGLE_CONFIG_PREFERENCES_ENCRYPTED=1
       - WHOOGLE_CONFIG_PREFERENCES_KEY="redacted"
     networks:
       - frp
@@ -108,6 +108,8 @@ services:
     environment:
     # lowkey useless to set this 'cus it's set like this by default but meh
       - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    NetworkMode: pasta
+    port_handler: slirp4netns
     networks:
       - frp
     security_opt:
