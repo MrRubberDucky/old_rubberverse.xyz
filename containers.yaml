@@ -75,7 +75,7 @@ services:
     labels:
       - io.containers.autoupdate=registry
     restart: unless-stopped
-	# Redis Server for SearXNG
+  # Redis Server for SearXNG
   redisxng:
     image: docker.io/library/redis:7.2-rc1-alpine
     container-name: searxng-redis
