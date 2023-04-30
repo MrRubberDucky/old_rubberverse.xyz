@@ -1,0 +1,65 @@
+# For use with podman-compose, and also podman running as user (systemctl --user enable --now podman)
+# podman-compose -f frpc-whoogle.yaml up -d
+# First revision of this, will grow in time once I get around doing stuff, you'll benefit from latest Podman and passt package on Debian
+services:
+# frp - fast reverse proxy
+# Podman has auto-update feature already built-in, we just need to specify full URL to the image and add a label to make it work
+  frp:
+    image: docker.io/snowdreamtech/frpc:latest
+    container_name: frp
+    NetworkMode: pasta
+    port_handler: slirp4netns
+    read_only: true
+    ports:
+      - 51820/udp
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      # In frpc.ini, use container names instead of localhost to point to containers
+      - ${HOME}/containers/configs/frpc.ini:/etc/frp/frpc.ini:ro,nosuid,nodev
+      # Modify file on host to include the following:
+      # net.core.rmem_max=2500000
+      # then do sudo sysctl -p /etc/sysctl.conf
+      - /etc/sysctl.conf:/etc/sysctl.conf:ro,nosuid,nodev
+    networks:
+      - frp
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
+# Whoogle - privacy front-end for Google
+ whoogle:
+    image: docker.io/benbusby/whoogle-search:latest
+    container_name: whoogle
+    environment:
+    # technically better if you point it to a .env file but meh i'm lazy
+      - WHOOGLE_URL_PREFIX=""
+      - WHOOGLE_CSP=1
+      - HTTPS_ONLY=1
+      - WHOOGLE_CONFIG_COUNTRY=PL
+      - WHOOGLE_CONFIG_LANGUAGE=lang_en
+      - WHOOGLE_CONFIG_SEARCH_LANGUAGE=lang_en
+      - WHOOGLE_CONFIG_THEME=dark
+      - WHOOGLE_CONFIG_ALTS=0
+      - WHOOGLE_CONFIG_TOR=0
+      - WHOOGLE_CONFIG_NEW_TAB=1
+      - WHOOGLE_CONFIG_VIEW_IMAGE=1
+      - WHOOGLE_MINIMAL=1
+      - WHOOGLE_RESULTS_PER_PAGE=30
+      - WHOOGLE_AUTOCOMPLETE=1
+      - EXPOSE_PORT=4242
+      - WHOOGLE_CONFIG_URL=https://search.rubberverse.xyz/
+      - WHOOGLE_CONFIG_PREFERENCES_ENCRYPTED=1
+      - WHOOGLE_CONFIG_PREFERENCES_KEY="redacted"
+    networks:
+      - frp
+    NetworkMode: pasta
+    tmpfs:
+    # podman-compose has a stroke when I try to put the flags that whoogle uses so dunno, this should do it
+      - /config/:size=10M
+    security_opt:
+      - no-new-privileges
+    cap_drop:
+      - ALL
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
