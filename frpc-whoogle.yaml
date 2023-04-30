@@ -77,3 +77,49 @@ services:
     labels:
       - io.containers.autoupdate=registry
     restart: unless-stopped
+# Dirty notepad, not yet finished
+# Redis Server for SearXNG
+  redisxng:
+    image: docker.io/library/redis:7.2-rc1-alpine
+    container-name: searxng-redis
+    user: '999:999' # redis user
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - searxng-redis
+    volumes:
+      - ${HOME}/containers/configs/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - cache:/data
+    security_opt:
+      - no-new-privileges
+    cap_add:
+      - SETGID
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+# SearXNG - Metasearch Engine
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    # needed otherwise you'll get su-exec: Operation Not Permitted
+    container_name: searxng
+    depends_on: 
+      - redisxng
+    user: '977:977' # SearxNG user
+    ports:
+      - 8080
+    volumes:
+      - ${HOME}/containers/configs/searxng:/etc/searxng
+    environment:
+    # lowkey useless to set this 'cus it's set like this by default but meh
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    networks:
+      - frp
+    security_opt:
+      - no-new-privileges
+    cap_add:
+    # This is required otherwise it errors out
+      - SETGID
+    cap_drop:
+      - ALL
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
