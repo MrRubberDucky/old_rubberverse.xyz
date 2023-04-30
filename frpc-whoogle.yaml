@@ -32,19 +32,29 @@ services:
  whoogle:
     image: docker.io/benbusby/whoogle-search:latest
     container_name: whoogle
+    ports:
+      - 4242
     environment:
-    # technically better if you point it to a .env file but meh i'm lazy
-      - WHOOGLE_URL_PREFIX=""
+        # technically better if you point it to a .env file but meh i'm lazy
+      - WHOOGLE_URL_PREFIX=
       - WHOOGLE_CSP=1
       - HTTPS_ONLY=1
+      # General settings
       - WHOOGLE_CONFIG_COUNTRY=PL
       - WHOOGLE_CONFIG_LANGUAGE=lang_en
       - WHOOGLE_CONFIG_SEARCH_LANGUAGE=lang_en
       - WHOOGLE_CONFIG_THEME=dark
+      # We don't make use of any alternative privacy front-ends, yet
       - WHOOGLE_CONFIG_ALTS=0
+      # TOR thingalings
       - WHOOGLE_CONFIG_TOR=0
+      # Tor doesn't work anyways, pointless keeping it around. Either 403 or query timeout
+      - WHOOGLE_TOR_SERVICE=0
+      - WHOOGLE_TOR_USE_PASS=0
+      # Tor thingalings end
       - WHOOGLE_CONFIG_NEW_TAB=1
       - WHOOGLE_CONFIG_VIEW_IMAGE=1
+      # UI and stuffs
       - WHOOGLE_MINIMAL=1
       - WHOOGLE_RESULTS_PER_PAGE=30
       - WHOOGLE_AUTOCOMPLETE=1
@@ -55,9 +65,11 @@ services:
     networks:
       - frp
     NetworkMode: pasta
-    tmpfs:
-    # podman-compose has a stroke when I try to put the flags that whoogle uses so dunno, this should do it
-      - /config/:size=10M
+    volumes:
+    # Funnily enough if you give /var/lib/tor or /run/tor it's own tmpfs mount, this will just cease to work
+    # In other words /var/lib/tor becomes root linked for some reason?
+      - type: tmpfs
+        target: /config:size=10M,nosuid,nodev
     security_opt:
       - no-new-privileges
     cap_drop:
