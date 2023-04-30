@@ -1,0 +1,130 @@
+# For use with podman-compose, and also podman running as user (systemctl --user enable --now podman)
+# podman-compose -f frpc-whoogle.yaml up -d
+# First revision of this, will grow in time once I get around doing stuff, you'll benefit from latest Podman and passt ># Oh and podman doesn't need the version 'x.x' thingy
+services:
+# frp - fast reverse proxy
+# Podman has auto-update feature already built-in, we just need to specify full URL to the image and add a label to mak>  frp:
+    image: docker.io/snowdreamtech/frpc:latest
+    container_name: frp
+    NetworkMode: pasta
+    port_handler: slirp4netns
+    read_only: true
+    ports:
+    # mature port ik
+      - 42069/udp
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      # In frpc.ini, use container names instead of localhost to point to containers
+      - ${HOME}/containers/configs/frpc.ini:/etc/frp/frpc.ini:ro,nosuid,nodev
+      # Modify file on host to include the following:
+      # net.core.rmem_max=2500000
+      # then do sudo sysctl -p /etc/sysctl.conf
+      - /etc/sysctl.conf:/etc/sysctl.conf:ro,nosuid,nodev
+    networks:
+      - frp
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
+# Whoogle - privacy front-end for Google
+  whoogle:
+    image: docker.io/benbusby/whoogle-search:latest
+    container_name: whoogle
+    ports:
+      - 4242
+    environment:
+      # technically better if you point it to a .env file but meh i'm lazy
+      - WHOOGLE_URL_PREFIX=
+      - WHOOGLE_CSP=1
+      - HTTPS_ONLY=1
+      # General settings
+      - WHOOGLE_CONFIG_COUNTRY=PL
+      - WHOOGLE_CONFIG_LANGUAGE=lang_en
+      - WHOOGLE_CONFIG_SEARCH_LANGUAGE=lang_en
+      - WHOOGLE_CONFIG_THEME=dark
+      # We don't make use of any alternative privacy front-ends, yet
+      - WHOOGLE_CONFIG_ALTS=0
+      # TOR thingalings
+      - WHOOGLE_CONFIG_TOR=0
+      # Tor doesn't work anyways, pointless keeping it around. Either 403 or query timeout
+      - WHOOGLE_TOR_SERVICE=0
+      - WHOOGLE_TOR_USE_PASS=0
+      # Tor thingalings end
+      - WHOOGLE_CONFIG_NEW_TAB=1
+      - WHOOGLE_CONFIG_VIEW_IMAGE=1
+      # UI and stuffs
+      - WHOOGLE_MINIMAL=1
+      - WHOOGLE_RESULTS_PER_PAGE=30
+      - WHOOGLE_AUTOCOMPLETE=1
+      - EXPOSE_PORT=4242
+      - WHOOGLE_CONFIG_URL=https://search.rubberverse.xyz/
+	    - WHOOGLE_CONFIG_PREFERENCES_ENCRYPTED=1
+      - WHOOGLE_CONFIG_PREFERENCES_KEY="redacted"
+    networks:
+      - frp
+    NetworkMode: pasta
+    volumes:
+    # Funnily enough if you give /var/lib/tor or /run/tor it's own tmpfs mount, this will just cease to work
+    # In other words /var/lib/tor becomes root linked for some reason?
+      - type: tmpfs
+        target: /config:size=10M,nosuid,nodev
+    security_opt:
+      - no-new-privileges
+    cap_drop:
+      - ALL
+    labels:
+      - io.containers.autoupdate=registry
+	restart: unless-stopped
+	# Redis Server for SearXNG
+  redisxng:
+    image: docker.io/library/redis:7.2-rc1-alpine
+    container-name: searxng-redis
+    user: '999:999' # redis user
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - 6379
+    volumes:
+      - ${HOME}/containers/configs/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - cache:/data
+    security_opt:
+      - no-new-privileges
+    cap_add:
+      - SETGID
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+	# SearXNG - Metasearch Engine
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: searxng
+    depends_on:
+      - redisxng
+    # needed otherwise you'll get su-exec: Operation Not Permitted
+    user: '977:977' # SearxNG user
+    ports:
+      - 8080
+    volumes:
+      - ${HOME}/containers/configs/searxng:/etc/searxng
+    environment:
+    # lowkey useless to set this 'cus it's set like this by default but meh
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    networks:
+      - frp
+    security_opt:
+      - no-new-privileges
+    cap_add:
+    # This is required otherwise su-exec: Operation Not Permitted
+      - SETGID
+    cap_drop:
+      - ALL
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
+
+networks:
+  frp:
+
+volumes:
+  cache:
+    driver: local
+  
