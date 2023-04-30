@@ -12,6 +12,7 @@ services:
     port_handler: slirp4netns
     read_only: true
     ports:
+    # mature port ik
       - 42069/udp
     cap_add:
       - NET_ADMIN
