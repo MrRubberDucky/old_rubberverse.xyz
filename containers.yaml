@@ -74,7 +74,7 @@ services:
       - ALL
     labels:
       - io.containers.autoupdate=registry
-	restart: unless-stopped
+    restart: unless-stopped
 	# Redis Server for SearXNG
   redisxng:
     image: docker.io/library/redis:7.2-rc1-alpine
@@ -93,7 +93,7 @@ services:
     cap_drop:
       - ALL
     restart: unless-stopped
-	# SearXNG - Metasearch Engine
+  # SearXNG - Metasearch Engine
   searxng:
     image: docker.io/searxng/searxng:latest
     container_name: searxng
