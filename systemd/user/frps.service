@@ -1,9 +1,10 @@
+# ${HOME}/.config/systemd/user/frps.service
 Decription=Start FRP server
 After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/ducky/frp/start.sh
+ExecStart=/var/lib/frp/frps -c /var/lib/frp/frps.ini
 TimeoutStartSec=5
 StandardOutput=syslog
 StandardError=syslog
