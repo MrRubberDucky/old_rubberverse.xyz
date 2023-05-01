@@ -1,5 +1,5 @@
 # For use with podman-compose, and also podman running as user (systemctl --user enable --now podman)
-# podman-compose -f frpc-whoogle.yaml up -d
+# podman-compose -f containers.yaml up -d
 # First revision of this, will grow in time once I get around doing stuff, you'll benefit from latest Podman and passt ># Oh and podman doesn't need the version 'x.x' thingy
 services:
 # frp - fast reverse proxy
