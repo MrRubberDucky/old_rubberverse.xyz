@@ -26,7 +26,7 @@ services:
     labels:
       - io.containers.autoupdate=registry
     restart: unless-stopped
-# Whoogle - privacy front-end for Google
+# Whoogle - privacy front-end for Google, https://search.rubberverse.xyz
   whoogle:
     image: docker.io/benbusby/whoogle-search:latest
     container_name: whoogle
@@ -93,7 +93,7 @@ services:
     cap_drop:
       - ALL
     restart: unless-stopped
-  # SearXNG - Metasearch Engine
+  # SearXNG - Metasearch Engine, https://searxng.rubberverse.xyz
   searxng:
     image: docker.io/searxng/searxng:latest
     container_name: searxng
@@ -121,6 +121,28 @@ services:
       - ALL
     labels:
       - io.containers.autoupdate=registry
+    restart: unless-stopped
+# rimgo - Privacy front-end for Imgur, https://rimgo.rubberverse.xyz
+  rimgo:
+    image: codeberg.org/video-prize-ranch/rimgo:latest
+    user: '65534:65534'
+    read_only: true
+    environment:
+      - PORT=5000
+      - IMGUR_CLIENT_ID=redacted
+      - PRIVACY_COUNTRY=Poland
+      - PRIVACY_PROVIDER=OVHcloud (proxied)
+      - PRIVACY_NOT_COLLECTED=true
+      - PRIVACY_CLOUDFLARE=false
+    labels:
+      - io.containers.autoupdate=registry
+    NetworkMode: pasta
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - frp
     restart: unless-stopped
 
 networks:
