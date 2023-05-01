@@ -144,6 +144,39 @@ services:
     networks:
       - frp
     restart: unless-stopped
+# PostgreSQL database for Umami Analytics
+  umamidb:
+    container_name: umamidb
+    image: docker.io/library/postgres:15.2-alpine
+    environment:
+      - POSTGRES_DB=redacted
+      - POSTGRES_USER=redacted
+      - POSTGRES_PASSWORD=redacted
+    ports:
+      - 5432
+    volumes:
+      - ${HOME}/sql:/docker-entrypoint.initdb.d/schema.postgresql.sql:ro
+      - umami-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+# umami.is - open-source, privacy-friendly analytics solution, https://analytics.rubberverse.xyz
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: umami
+    ports:
+      - 5001
+    environment:
+      - PORT=5001
+      - DATABASE_URL=postgresql://redacted:redacted@umamidb:5432/redacted
+      - DATABASE_TYPE=postgresql
+      - HASH_SALT=redacted
+    depends_on:
+      - umamidb
+# Technically speaking I managed to toggle read-only for umami only after it was initially configured. Not sure if that breaks something but it has a problem with writing config files so might break a lot
+    labels:
+      - io.containers.autoupdate=registry
+    networks:
+      - frp
+    restart: unless-stopped
 
 networks:
   frp:
