@@ -1,0 +1,155 @@
+# For use with devel version of podman-compose and up-to-date Podman, passt and slirp4netns. Everything in this file is deployed under a single pod
+# Command: podman-compose -f containers.yaml up -d
+# Containers.yml revision: 1.3.5
+services:
+# frp - fast reverse proxy
+# Podman can auto-update containers, all you need to do is specify full url to the image and add a label
+  frp:
+    image: docker.io/snowdreamtech/frpc:latest
+    container_name: frp
+    NetworkMode: pasta
+    port_handler: slirp4netns
+    read_only: true
+    ports:
+    # mature port ik
+      - 42069/udp
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      # In frpc.ini, use container names instead of localhost to point to containers
+      - ${HOME}/containers/configs/frpc.ini:/etc/frp/frpc.ini:ro,nosuid,nodev
+      - /etc/sysctl.conf:/etc/sysctl.conf:ro,nosuid,nodev
+      # Modify sysctl on the host to include the following: net.core.rmem_max=2500000
+      # then do sudo sysctl -p /etc/sysctl.conf and probably also point it to the container? not sure if that step is needed though
+      - ${HOME}/certs:/etc/ssl:ro,nosuid,nodev
+      # for TLS connection
+   networks:
+      - frp
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
+# Whoogle - privacy front-end for Google
+  whoogle:
+    image: docker.io/benbusby/whoogle-search:latest
+    container_name: whoogle
+    user: whoogle
+    ports:
+      - 4242
+    env_file:
+    # More tidy by using .env files
+      - whoogle.env
+    networks:
+      - frp
+    NetworkMode: pasta
+    volumes:
+    # Funnily enough if you give /var/lib/tor or /run/tor it's own tmpfs mount, this will just cease to work
+    # In other words /var/lib/tor becomes root linked for some reason?
+      - type: tmpfs
+        target: /config:size=10M,nosuid,nodev
+    security_opt:
+      - no-new-privileges
+    cap_drop:
+      - ALL
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
+# Redis Server for SearXNG
+  redisxng:
+    image: docker.io/library/redis:7.2-rc1-alpine
+    container-name: searxng-redis
+    user: '999:999' # redis user
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - 6379
+    volumes:
+      - ${HOME}/containers/configs/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - cache:/data
+    security_opt:
+      - no-new-privileges
+    # Workaround for su-exec
+    cap_add:
+      - SETGID
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+# SearXNG - Metasearch Engine
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    # needed otherwise you'll get su-exec: Operation Not Permitted
+    container_name: searxng
+    depends_on:
+      - redisxng
+    user: '977:977' # SearxNG user
+    ports:
+      - 8080
+    volumes:
+      - ${HOME}/containers/configs/searxng:/etc/searxng
+    environment:
+    # lowkey useless to set this 'cus it's set like this by default but meh
+      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
+    networks:
+      - frp
+    security_opt:
+      - no-new-privileges
+    cap_add:
+    # Workaround for su-exec
+      - SETGID
+    cap_drop:
+      - ALL
+    labels:
+      - io.containers.autoupdate=registry
+    restart: unless-stopped
+# rimgo - privacy front-end for Imgur
+  rimgo:
+    image: codeberg.org/video-prize-ranch/rimgo:latest
+    container_name: rimgo
+    user: '65534:65534' # nobody user
+    read_only: true
+    env_file:
+      - rimgo.env
+    labels:
+      - io.containers.autoupdate=registry
+    NetworkMode: pasta
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - frp
+    restart: unless-stopped
+# postgresql database for umami
+  umamidb:
+    container_name: umamidb
+    image: docker.io/library/postgres:15.2-alpine
+    env_file:
+      - umamidb.env
+    ports:
+      - 5432
+    volumes:
+      - ${HOME}/sql:/docker-entrypoint.initdb.d/schema.postgresql.sql:ro
+      - umami-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+# umami.is - open-source, privacy-friendly analytics solution
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: umami
+    ports:
+      - 5001
+    user: nobody
+    env_file:
+      - umami.env
+    depends_on:
+      - umamidb
+    labels:
+      - io.containers.autoupdate=registry
+    networks:
+      - frp
+    restart: unless-stopped
+
+networks:
+  frp:
+
+volumes:
+  cache:
+    driver: local
+  umami-db-data:
