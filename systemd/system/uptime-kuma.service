@@ -1,0 +1,18 @@
+[Unit]
+Description=Uptime Kuma - A free and open source uptime monitoring solution
+Documentation=https://github.com/louislam/uptime-kuma
+After=network.target
+
+[Service]
+Type=forking
+User=uptime
+WorkingDirectory=/var/lib/uptime-kuma
+ExecStart=/usr/bin/pm2 start /var/lib/uptime-kuma/server/server.js --name uptime-kuma -- --port=3300 --host=0.0.0.0
+ExecRestart=/usr/bin/pm2 restart uptime-kuma
+ExecStop=/usr/bin/pm2 stop uptime-kuma
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+RequiredBy=network.target
+# I know this is very pointless but I'm used to systemctl start/stop etc. so pm2 broke my brain too hard lol

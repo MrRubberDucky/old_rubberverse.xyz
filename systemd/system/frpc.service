@@ -1,0 +1,13 @@
+[Unit]
+Description=Start frp client
+After=network-online.target
+
+[Service]
+Type=simple
+User=frp
+ExecStart=/var/lib/frp/frpc -c /var/lib/frp/frpc.ini
+TimeoutStartSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
