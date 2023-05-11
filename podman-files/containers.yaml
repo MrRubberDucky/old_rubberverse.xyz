@@ -29,7 +29,6 @@ services:
       - frp
     labels:
       - io.containers.autoupdate=registry
-    restart: unless-stopped
 # Whoogle - privacy front-end for Google
   whoogle:
     image: docker.io/benbusby/whoogle-search:latest
@@ -54,7 +53,6 @@ services:
       - ALL
     labels:
       - io.containers.autoupdate=registry
-    restart: unless-stopped
 # Redis Server for SearXNG
   redisxng:
     image: docker.io/library/redis:7.2-rc1-alpine
@@ -73,7 +71,6 @@ services:
       - SETGID
     cap_drop:
       - ALL
-    restart: unless-stopped
 # SearXNG - Metasearch Engine
   searxng:
     image: docker.io/searxng/searxng:latest
@@ -100,7 +97,6 @@ services:
       - ALL
     labels:
       - io.containers.autoupdate=registry
-    restart: unless-stopped
 # rimgo - privacy front-end for Imgur
   rimgo:
     image: codeberg.org/video-prize-ranch/rimgo:latest
@@ -118,7 +114,6 @@ services:
       - ALL
     networks:
       - frp
-    restart: unless-stopped
 # postgresql database for umami
   umamidb:
     container_name: umamidb
@@ -130,7 +125,6 @@ services:
     volumes:
       - ${HOME}/sql:/docker-entrypoint.initdb.d/schema.postgresql.sql:ro
       - umami-db-data:/var/lib/postgresql/data
-    restart: unless-stopped
 # umami.is - open-source, privacy-friendly analytics solution
   umami:
     image: ghcr.io/umami-software/umami:postgresql-latest
@@ -146,7 +140,6 @@ services:
       - io.containers.autoupdate=registry
     networks:
       - frp
-    restart: unless-stopped
 
 networks:
   frp:
