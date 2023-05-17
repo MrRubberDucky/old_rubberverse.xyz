@@ -1,0 +1,9 @@
+#!/bin/sh
+# From https://unix.stackexchange.com/a/612423
+
+/var/lib/mcserver/rcon stop
+
+while kill -0 $MAINPID 2>/dev/null
+do
+  sleep 0.5
+done

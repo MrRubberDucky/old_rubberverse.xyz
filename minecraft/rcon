@@ -1,0 +1,4 @@
+#!/bin/sh
+# For now using mcrcon, gonna switch to gorcon/rcon-cli later
+# Yoinked from https://unix.stackexchange.com/a/612423
+mcrcon -H localhost -P 2555 -p "redacted" $0

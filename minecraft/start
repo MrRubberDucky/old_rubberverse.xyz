@@ -1,0 +1,2 @@
+#!/bin/sh
+java -Xmx3G -Xms1G -server -jar /var/lib/mcserver/forgeserv.jar nogui
