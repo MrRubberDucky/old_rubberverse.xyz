@@ -1,14 +1,14 @@
 Description=Start MC Server
-After=local-fs.target network-online.target
+After=network-online.target
 
 [Service]
-WorkingDirectory=/var/lib/mcserver
+Type=simple
 User=mcserver
-Type=forking
-
-ExecStart=/usr/bin/screen -h 1024 -dmS minecraft ./server.sh
-ExecStop=/usr/bin/screen -p 0 -S minecraft -X eval 'stuff \"stop\"\015'
+WorkingDirectory=/var/lib/mcserver
+ExecStart=/var/lib/mcserver/start
+ExecStop=/var/lib/mcserver/stop
+Restart=always
 RemainAfterExit=yes
 
 [Install]
-WantedBy=network-online.target
+WantedBy=default.target
