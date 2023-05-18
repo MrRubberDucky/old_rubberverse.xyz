@@ -87,7 +87,7 @@ def game_image(game) -> str:
     # TODO: Get other image if Thumbnail is not available?
     image_url = ""
     for image in game["keyImages"]:
-        if image["type"] in ["DieselStoreFrontWide", "Thumbnail"]:
+        if image["type"] in ["DieselStoreFrontWide", "Thumbnail", "offer"]:
             image_url = image["url"]
     settings.logger.debug(f"\tImage URL: {requote_uri(image_url)}")
 
@@ -206,6 +206,10 @@ def create_embed(previous_games, game):
         Embed: The embed with the free game we will send to Discord.
     """
     embed = DiscordEmbed(description=game["description"])
+
+   if url.endswith("/home"):
+       original_url = url
+       url = url[:-5]
 
     url = game_url(game)
     game_name = game["title"]
