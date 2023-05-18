@@ -9,6 +9,7 @@ from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED
 from apscheduler.schedulers.blocking import BlockingScheduler
 from discord_webhook import DiscordEmbed
 
+from discord_free_game_notifier import settings
 from discord_free_game_notifier.epic import get_free_epic_games
 from discord_free_game_notifier.webhook import send_embed_webhook, send_webhook
 
@@ -18,7 +19,7 @@ sched = BlockingScheduler()
 def my_listener(event):
     """Send a message to the webhook when a job failed."""
     if event.exception:
-        send_webhook(f"Job failed: {event.exception}")
+         settings.logger.debug(f"Job failed: {event.exception}")
 
 
 def send_games(game: DiscordEmbed, game_service="Unknown"):
@@ -33,7 +34,7 @@ def send_games(game: DiscordEmbed, game_service="Unknown"):
         response = send_embed_webhook(game)
 
         if not response.ok:
-            send_webhook(
+             settings.logger.debug(
                 f"Error when checking game for {game_service}:\n"
                 f"{response.status_code} - {response.reason}: {response.text}")
 
