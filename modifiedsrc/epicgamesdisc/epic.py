@@ -1,4 +1,5 @@
 """Modified version of https://github.com/andrewguest/slack-free-epic-games"""
+# Modified version of thelovinator1's fork
 
 import calendar
 import os
@@ -25,7 +26,6 @@ PARAMS: Dict[str, str] = {
     "allowCountries": "US",
 }
 
-
 def promotion_start(game) -> int:
     """Get the start date of a game's promotion.
 
@@ -49,7 +49,6 @@ def promotion_start(game) -> int:
     settings.logger.debug(f"\tStarted: {start_date}")
 
     return start_date
-
 
 def promotion_end(game) -> int:
     """Get the end date of a game's promotion.
@@ -75,7 +74,6 @@ def promotion_end(game) -> int:
 
     return end_date
 
-
 def game_image(game) -> str:
     """Get an image URL for the game.
 
@@ -95,7 +93,6 @@ def game_image(game) -> str:
 
     # Epic's image URL has spaces in them, so requote the URL.
     return requote_uri(image_url)
-
 
 def game_url(game) -> str:
     """If you click the game name, you'll be taken to the game's page on Epic.
@@ -119,10 +116,6 @@ def game_url(game) -> str:
 
     settings.logger.debug(f"\tURL: {requote_uri(url)}")
 
-    # Epic's image URL has spaces in them, could happen here too so requote the URL.
-    return requote_uri(url)
-
-
 def check_promotion(game) -> bool:
     """
     Check if the game has a promotion, only free games has these.
@@ -138,7 +131,6 @@ def check_promotion(game) -> bool:
         settings.logger.debug(f"\tNo promotions found for {game_name}, skipping")
         return False
     return True
-
 
 def get_free_epic_games():
     """Uses an API from Epic to parse a list of free games to find this
@@ -166,7 +158,7 @@ def get_free_epic_games():
         game_name = game["title"]
 
         original_price = game["price"]["totalPrice"]["originalPrice"]
-        discount = game["price"]["totalPrice"]["discount"]
+		 discount = game["price"]["totalPrice"]["discount"]
 
         final_price = original_price - discount
 
@@ -178,10 +170,10 @@ def get_free_epic_games():
                 if already_posted(previous_games, game_name):
                     continue
 
-                send_webhook(f"{game_name} - Could be free game? lol - It is in the 'Epic Vault'")
+                settings.logger.debug(f"{game_name} - Could be free game? lol - It is in the 'Epic Vault'")
                 yield create_embed(previous_games, game)
 
-        # If the original_price - discount is 0, then the game is free.
+        # If the original_price - discount is 0, then the game is free. This also additionally checks if the game is currently free but didn't have price set before
         if final_price == 0 and (original_price != 0 and discount != 0):
             settings.logger.debug(f"Game: {game_name}")
 
@@ -202,7 +194,6 @@ def get_free_epic_games():
 
     return
 
-
 def create_embed(previous_games, game):
     """
     Create the embed that we will send to Discord.
@@ -218,21 +209,6 @@ def create_embed(previous_games, game):
 
     url = game_url(game)
     game_name = game["title"]
-
-    # Jotun had /home appended to the URL, I have no idea if it
-    # is safe to remove it, so we are removing it here and
-    # sending a message to the user that we modified the URL.
-    if url.endswith("/home"):
-        original_url = url
-        url = url[:-5]
-        send_webhook(
-            f"{game_name} had /home appended to the URL, "
-            "so I removed it here. It could be a false positive but "
-            "I could be wrong, I am a small robot after all. "
-            "Beep boop 🤖\n"
-            f"Original URL: <{original_url}>\n"
-        )
-
     embed.set_author(
         name=game_name,
         url=url,
@@ -256,8 +232,7 @@ def create_embed(previous_games, game):
         seller = game["seller"]["name"] if game["seller"] else "Unknown"
 
         embed.set_footer(text=f"{seller}")
-
-        if image_url := game_image(game):
+		        if image_url := game_image(game):
             embed.set_image(url=image_url)
 
         # Save the game title to the previous games file, so we don't post it again.
@@ -277,3 +252,4 @@ if __name__ == "__main__":
                 print(
                     f"Error when checking game for Epic:\n"
                     f"{webhook_response.status_code} - {webhook_response.reason}: {webhook_response.text}")
+
