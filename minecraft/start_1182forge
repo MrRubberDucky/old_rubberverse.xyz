@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/lib/jvm/java-17-openjdk-amd64/bin/java @user.txt @libraries/net/minecraftforge/forge/1.18.2-40.2.4/unix_args.txt "$0"
