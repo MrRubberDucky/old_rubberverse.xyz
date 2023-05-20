@@ -1,0 +1,8 @@
+#!/bin/sh
+
+/var/lib/mcserver/rcon_stop
+
+while kill -0 $MAINPID 2>/dev/null
+do
+  sleep 0.5
+done
