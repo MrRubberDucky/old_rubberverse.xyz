@@ -1,3 +1,3 @@
 #!/bin/bash
 # using https://github.com/gorcon/rcon-cli to send rcon command
-rcon -c /var/lib/mcserver/rcon.yaml -e minecraft command "stop"
+rcon -c /var/lib/mcserver/rcon.yaml -e minecraft stop
