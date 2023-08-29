@@ -1,0 +1,13 @@
+[Unit]
+Description=lovingsosa free bundle buyer
+After=network.target
+
+[Service]
+ExecStart=/bnin/bash -c 'cd /var/lib/bundlesniper; python3 main.py'
+User=bundles
+Type=idle
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
