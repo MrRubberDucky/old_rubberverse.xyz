@@ -1,12 +1,13 @@
-# For use with devel version of podman-compose and up-to-date Podman, passt and slirp4netns. Everything in this file is deployed under a single pod
+# For use with podman-compose, and also podman running as user (systemctl --user enable --now podman)
 # Command: podman-compose -f containers.yaml up -d
-# Containers.yml revision: 1.3.5
+# podman doesn't need version 'x.x' at the start of a compose file
+# Containers.yml revision: 2.0
 services:
 # frp - fast reverse proxy
-# Podman can auto-update containers, all you need to do is specify full url to the image and add a label
-  frp:
+# Podman has auto-update feature already built-in, we just need to specify full URL to the image and add a label to make it work
+  frpc:
     image: docker.io/snowdreamtech/frpc:latest
-    container_name: frp
+    container_name: frpc
     NetworkMode: pasta
     port_handler: slirp4netns
     read_only: true
@@ -20,13 +21,13 @@ services:
     volumes:
       # In frpc.ini, use container names instead of localhost to point to containers
       - ${HOME}/containers/configs/frpc.ini:/etc/frp/frpc.ini:ro,nosuid,nodev
-      - /etc/sysctl.conf:/etc/sysctl.conf:ro,nosuid,nodev
-      # Modify sysctl on the host to include the following: net.core.rmem_max=2500000
-      # then do sudo sysctl -p /etc/sysctl.conf and probably also point it to the container? not sure if that step is needed though
-      - ${HOME}/certs:/etc/ssl:ro,nosuid,nodev
-      # for TLS connection
-   networks:
-      - frp
+      # Modify file on host to include the following:
+      # net.core.rmem_max=2500000
+      # then do sudo sysctl -p /etc/sysctl.conf
+      - /etc/sysctl.conf:/etc/sysctl.conf
+      - ${HOME}/cert:/etc/ssl:ro,nosuid,nodev
+    networks:
+      - frpc
     labels:
       - io.containers.autoupdate=registry
 # Whoogle - privacy front-end for Google
@@ -37,10 +38,9 @@ services:
     ports:
       - 4242
     env_file:
-    # More tidy by using .env files
       - whoogle.env
     networks:
-      - frp
+      - frpc
     NetworkMode: pasta
     volumes:
     # Funnily enough if you give /var/lib/tor or /run/tor it's own tmpfs mount, this will just cease to work
@@ -53,55 +53,10 @@ services:
       - ALL
     labels:
       - io.containers.autoupdate=registry
-# Redis Server for SearXNG
-  redisxng:
-    image: docker.io/library/redis:7.2-rc1-alpine
-    container-name: searxng-redis
-    user: '999:999' # redis user
-    command: redis-server /usr/local/etc/redis/redis.conf
-    ports:
-      - 6379
-    volumes:
-      - ${HOME}/containers/configs/redis.conf:/usr/local/etc/redis/redis.conf:ro
-      - cache:/data
-    security_opt:
-      - no-new-privileges
-    # Workaround for su-exec
-    cap_add:
-      - SETGID
-    cap_drop:
-      - ALL
-# SearXNG - Metasearch Engine
-  searxng:
-    image: docker.io/searxng/searxng:latest
-    # needed otherwise you'll get su-exec: Operation Not Permitted
-    container_name: searxng
-    depends_on:
-      - redisxng
-    user: '977:977' # SearxNG user
-    ports:
-      - 8080
-    volumes:
-      - ${HOME}/containers/configs/searxng:/etc/searxng
-    environment:
-    # lowkey useless to set this 'cus it's set like this by default but meh
-      - SEARXNG_SETTINGS_PATH=/etc/searxng/settings.yml
-    networks:
-      - frp
-    security_opt:
-      - no-new-privileges
-    cap_add:
-    # Workaround for su-exec
-      - SETGID
-    cap_drop:
-      - ALL
-    labels:
-      - io.containers.autoupdate=registry
-# rimgo - privacy front-end for Imgur
   rimgo:
     image: codeberg.org/video-prize-ranch/rimgo:latest
     container_name: rimgo
-    user: '65534:65534' # nobody user
+    user: '65534:65534'
     read_only: true
     env_file:
       - rimgo.env
@@ -113,10 +68,10 @@ services:
     cap_drop:
       - ALL
     networks:
-      - frp
+      - frpc
 # postgresql database for umami
   umamidb:
-    container_name: umamidb
+    container_name: umamipostgres
     image: docker.io/library/postgres:15.2-alpine
     env_file:
       - umamidb.env
@@ -127,11 +82,12 @@ services:
       - umami-db-data:/var/lib/postgresql/data
 # umami.is - open-source, privacy-friendly analytics solution
   umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
+    image: ghcr.io/umami-software/umami:postgresql-v2.5.0
     container_name: umami
     ports:
       - 5001
-    user: nobody
+    volumes:
+      - ${HOME}/umami:/.cache:rw
     env_file:
       - umami.env
     depends_on:
@@ -139,12 +95,90 @@ services:
     labels:
       - io.containers.autoupdate=registry
     networks:
-      - frp
+      - frpc
+# This is for Pingvin-Share
+  clamav:
+    image: docker.io/clamav/clamav:stable
+    container_name: clamav
+    privileged: true
+    labels:
+      - io.containers.autoupdate=registry
+    ports:
+      - 3310
+    publish:
+      - 3310
+  pingvin:
+    image: docker.io/stonith404/pingvin-share
+    container_name: pingvin-share
+    env_file:
+      - pingvin.env
+    ports:
+      - 3000
+    volumes:
+      - ${HOME}/pingvin-data/:/opt/app/backend/data
+      - ${HOME}/pingvin-images/:/opt/app/frontend/public/img
+    depends_on:
+      clamav:
+        condition: service_healthy
+    networks:
+      - frpc
+    labels:
+      - io.containers.autoupdate=registry
+  dfgqor:
+    image: ghcr.io/thelovinator1/discord-free-game-notifier:latest
+    container_name: dfgqor
+    environment:
+      - WEBHOOK_URL=https://discord.com/api/webhooks/<redacted>
+      - STEAM_ICON=https://rubberverse.xyz/uploads/steamlogo.png
+      - GOG_ICON=https://rubberverse.xyz/uploads/goglogo.png
+      - EPIC_ICON=https://rubberverse.xyz/uploads/egsblogo.png
+    labels:
+      - io.containers.autoupdate=registry
+ # FreshRSS
+  freshrss:
+    image: docker.io/freshrss/freshrss:latest
+    container_name: freshrss
+    hostname: freshrss
+    volumes:
+      - '.freshrss_data:/var/www/FreshRSS/data'
+      - '.freshrss_extensions:/var/www/FreshRSS/extensions'
+    ports:
+      - 8080
+    env-file:
+      - freshrss.env
+    networks:
+      - frpc
+    labels:
+      - io.containers.autoupdate=registry
+# Zipline Postgres
+  pgzip:
+    image: docker.io/library/postgres:15.2-alpine
+    contaienr-name: sql2
+    ports:
+      - 5432
+    env_file:
+      - ziplinedb.env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+# Zipline
+  zipline:
+    image: ghcr.io/diced/zipline:trunk
+    ports:
+      - 3000
+    env_file:
+      - zipline.env
+    volumes:
+      - './zipline/uploads:/zipline/uploads'
+      - './zipline/public:/zipline/public'
+    networks:
+      - frpc
+    depends_on:
+      - pgzip
 
 networks:
-  frp:
+  frpc:
 
 volumes:
   cache:
-    driver: local
   umami-db-data:
+  pg_data:
